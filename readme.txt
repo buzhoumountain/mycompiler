@@ -114,3 +114,17 @@ enum e_TokenCode {
 1.动态字符串
 2.动态数组
 3.hash 表
+
+
+×××××××××××××××××××××××××
+sc 语言语法分析
+5.1 外部定义
+5.1.1 翻译单元
+<translation_unit>::={<external_declaration>}<TK_EOF>
+
+5.1.2 外部声明
+<external_declaration>::=<function_definition>|<declaration>
+<function_definition>::=<type_specifier><declarator><funcbody>
+<declaration>::=<type_specifier><TK_SEMICOLON>|<type_specifier><init_declarator_list><TK_SEMICOLON>
+<init_declarator_list>::=<init_declarator>{<TK_COMMA><init_declarator>}
+<init_declarator>::=<declarator>{<TK_ASSIGN><initializer>}
