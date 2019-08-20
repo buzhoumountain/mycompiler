@@ -1,5 +1,6 @@
 #define NULL 0
 enum e_TokenCode {
+    // 运算符，分隔符 红色
     TK_PLUS = 1,
     TK_MINUS,
     TK_STAR,
@@ -26,10 +27,12 @@ enum e_TokenCode {
     TK_ELLIPSIS,
     TK_EOF,
 
+    // 常量 黄色
     TK_CINT,
     TK_CCHAR,
     TK_CSTR,
     
+    // 关键字 绿色
     KW_CHAR,
     KW_SHORT,
     KW_INT,
@@ -45,5 +48,8 @@ enum e_TokenCode {
     KW_SIZEOF,
     KW_ALIGN,
     KW_CDECL,
-    KW_STDCALL
+    KW_STDCALL,
+
+    // 标识符 灰色
+    TK_IDENT
 };

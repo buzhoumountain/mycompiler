@@ -6,18 +6,19 @@
 #include "dynstring.h"
 
 #define CH_EOF -1
-
 #define MAXKEY 1024
+
 TkWord *tk_hashtable[MAXKEY];
 DynArray tktable;
-
-int token;
-char* filename;
-int line_num;
-DynString sourcestr;
 DynString tkstr;
+DynString sourcestr;
+
+int tkvalue;
 char ch;
-char tkvalue;
+int token;
+int line_num;
+
+char* filename;
 FILE* fin;
 
 int elf_hash(char *key) {
@@ -569,4 +570,159 @@ void parse_string(char sep) {
     dynstring_chcat(&sourcestr, sep);
     dynstring_chcat(&sourcestr, '\0');
     getch();
+}
+
+enum e_LexState {
+    LEX_NORMAL,
+    LEX_SEP,
+};
+
+
+
+void color_token(int lex_state) {
+#ifdef _WIN32
+    #include <windows.h>
+    HANDLE h = GetStdHandle(STD_OUTPUT_HANDLE);
+    char *p;
+    switch (lex_state)
+    {
+    case LEX_NORMAL:
+        {
+            if (token >= TK_IDENT) {
+                // 标识符为灰色
+                SetConsoleTextAttribute(h, FOREGROUND_INTENSITY)；
+            } else if (token >= KW_CHAR) {
+                // 关键字为绿色
+                SetConsoleTextAttribute(h, FOREGROUND_GREEN | FOREGROUND_INTENSITY);
+            } else if (token >= TK_CINT) {
+                // 常量为黄色
+                SetConsoleTextAttribute(h, FOREGROUND_RED | FOREGROUND_GREEN);
+            } else {
+                // 运算符及分隔符为红色
+                SetConsoleTextAttribute(h, FOREGROUND_RED | FOREGROUND_INTENSITY);
+            }
+            p = get_tkstr(token);
+            printf("%s", p);
+            break;
+        }
+        break;
+    case LEX_SEP:
+        printf("%c", ch);
+        break;
+    }
+#endif
+
+#ifdef __unix__
+#include <stdio.h>
+    // Linux 终端控制台字体颜色,用到一个 转义序列
+    // \e[F;B;Om
+    // \e   转义字符开始
+    // [    开始定义颜色
+    // 'F'  字体颜色    编号30~37
+    // 'B'  背景色  编号40~47
+    // 'O'  为特殊意义代码
+    // m 是标记
+    // m 后面不用跟空格，是所定义的彩色字和背景
+
+    // PS1='[\[\e[32;40m\]\u@\h \w \t]$ '
+
+    // 颜色表
+    // 前景 背景颜色
+    // -------------------------
+    // 30 40 黑色
+    // 31 41 红色
+    // 32 42 绿色
+    // 33 43 黄色
+    // 34 44 蓝色
+    // 35 45 洋红 紫色
+    // 36 46 青色 深绿
+    // 37 47 白色
+
+    // 特别代码意义
+    // -------------------------
+    // 0 OFF
+    // 1 高亮显示
+    // 4 underline
+    // 5 闪烁
+    // 7 反白显示
+    // 8 不可见
+
+    // \033[22;30m - black
+    // \033[22;31m - red
+    // \033[22;32m - green
+    // \033[22;33m - brown
+    // \033[22;34m - blue
+    // \033[22;35m - magenta
+    // \033[22;36m - cyan
+    // \033[22;37m - gray
+    // \033[01;30m - dark gray
+    // \033[01;31m - light red
+    // \033[01;32m - light green
+    // \033[01;33m - yellow
+    // \033[01;34m - light blue
+    // \033[01;35m - light magenta
+    // \033[01;36m - light cyan
+    // \033[01;37m - white
+    
+    // ANSI控制码: 
+    // QUOTE: 
+    // /033[0m 关闭所有属性   
+    // /033[1m 设置高亮度   
+    // /03[4m 下划线   
+    // /033[5m 闪烁   
+    // /033[7m 反显   
+    // /033[8m 消隐   
+    // /033[30m -- /033[37m 设置前景色   
+    // /033[40m -- /033[47m 设置背景色   
+    // /033[nA 光标上移n行   
+    // /03[nB 光标下移n行   
+    // /033[nC 光标右移n行   
+    // /033[nD 光标左移n行   
+    // /033[y;xH设置光标位置   
+    // /033[2J 清屏   
+    // /033[K 清除从光标到行尾的内容   
+    // /033[s 保存光标位置   
+    // /033[u 恢复光标位置   
+    // /033[?25l 隐藏光标   
+    // /33[?25h 显示光标
+    
+    // echo -e  "\033[35;1m Shocking \033[0m"
+    // printf("\033[34mThis is blue.\033[0m\n");
+
+#endif
+}
+
+int main(int argc, char **argv) {
+    fin = fopen(argv[1], "rb");
+    if (!fin) {
+        printf("不能打开sc源文件!\n");
+        return 0;
+    }
+    init();
+
+    getch();
+    do {
+        get_token();
+        color_token(LEX_NORMAL);
+    } while (token != TK_EOF);
+    printf("\n代码行数：%d行\n", line_num);
+
+    cleanup();
+    fclose(fin);
+    printf("%s词法分析成功!", argv[1]);
+    return 1;
+}
+
+void init() {
+    line_num = 1;
+    init_lex();
+}
+
+void cleanup() {
+    int i;
+    printf("\n tktable.count=%d\n", tktable.count);
+    for (i = TK_IDENT; i < tktable.count; i++) {
+        free(tktable.data[i]);
+    }
+    free(tktable.data);
 }
